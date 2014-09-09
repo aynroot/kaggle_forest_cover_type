@@ -24,17 +24,17 @@ test <- test[, -1]
 Make Cover_Type a factor variable, so methods would correctly detect classification problem.
 ```{r}
 train$Cover_Type <- as.factor(train$Cover_Type)
-test$Cover_Type <- as.factor(testCover_Type)
+test$Cover_Type <- as.factor(test$Cover_Type)
 ```
 
-**Initial Model (acc: 0,399) <- OLD DATA, RESUBMIT AND RECALC** 
+**Initial Model -- kNN (acc: 0,56)** 
 Try kNN with data centering and scaling:
 ```{r}
 ctrl <- trainControl(method="cv", number = 7)
 knnFit <- train(Cover_Type ~ ., data=train, method = "knn", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 10)
 knnFit
 plot(knnFit)
-cm <- confusionMatrix(data = as.integer(round(predict(knnFit, newdata=test))), reference = test$Cover_Type)
+cm <- confusionMatrix(data = predict(knnFit, newdata=test), reference = test$Cover_Type)
 cm
 cm_norm <- cm$table / rowSums(cm$table) * 100
 cm_norm
@@ -48,7 +48,7 @@ train <- subset(train, select=-nsv)
 test <- subset(test, select=-nsv)
 
 knn_fit <- train(Cover_Type ~ ., data=train, method="knn", preProcess=c("center", "scale"), trControl = ctrl, tuneLength = 10)
-cm <- confusionMatrix(data = as.integer(round(predict(knn_fit, newdata=test))), reference = test$Cover_Type)
+cm <- confusionMatrix(data = predict(knn_fit, newdata=test), reference = test$Cover_Type)
 cm
 cm_norm <- cm$table / rowSums(cm$table) * 100
 cm_norm
