@@ -1,0 +1,73 @@
+---
+title: "Forest Covert Type Prediction"
+author: "Valeria Chernenko"
+date: "20 августа 2014 г."
+output: html_document
+---
+
+
+```{r}
+library(caret)
+set.seed(42)
+data <- read.csv("train.csv")
+inTrain <- createDataPartition(y=data$Cover_Type, list=F, p=0.7)
+train <- data[inTrain,]
+test <- data[-inTrain,]
+```
+
+Remove unnecessary variable -- ID:
+```{r}
+train <- train[, -1]
+test <- test[, -1]
+```
+
+
+Try kNN with data centering and scaling:
+```{r}
+ctrl <- trainControl(method="cv", number = 7)
+knnFit <- train(Cover_Type ~ ., data=train, method = "knn", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 10)
+knnFit
+plot(knnFit)
+cm <- confusionMatrix(data = as.integer(round(predict(knnFit, newdata=test))), reference = test$Cover_Type)
+cm
+cm_norm <- cm$table / rowSums(cm$table) * 100
+cm_norm
+cm$byClass
+```
+
+Try nearZeroVar elimination to remove unnecessary data:
+```{r}
+nsv <- nearZeroVar(train, saveMetrics = F)
+train <- subset(train, select=-nsv)
+test <- subset(test, select=-nsv)
+
+knn_fit <- train(Cover_Type ~ ., data=train, method="knn", preProcess=c("center", "scale"), trControl = ctrl, tuneLength = 10)
+cm <- confusionMatrix(data = as.integer(round(predict(knn_fit, newdata=test))), reference = test$Cover_Type)
+cm
+cm_norm <- cm$table / rowSums(cm$table) * 100
+cm_norm
+cm$byClass
+```
+
+Now let's check random forest:
+```{r}
+rfFit <- train(Cover_Type ~ ., data=train, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 3)
+rfFit
+plot(rfFit)
+cm <- confusionMatrix(data = as.integer(round(predict(rfFit, newdata=test))), reference = test$Cover_Type)
+cm
+cm_norm <- cm$table / rowSums(cm$table) * 100
+cm_norm
+cm$byClass
+```
+
+And generalized linear model:
+```{r}
+glmFit <- train(Cover_Type ~ ., data=train, method = "glm", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 10)
+glmFit
+cm <- confusionMatrix(data = as.integer(round(predict(glmFit, newdata=test))), reference = test$Cover_Type)
+cm
+cm_norm <- cm$table / rowSums(cm$table) * 100
+cm_norm
+cm$byClass
+```
