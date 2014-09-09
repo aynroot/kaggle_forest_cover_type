@@ -21,7 +21,13 @@ train <- train[, -1]
 test <- test[, -1]
 ```
 
+Make Cover_Type a factor variable, so methods would correctly detect classification problem.
+```{r}
+train$Cover_Type <- as.factor(train$Cover_Type)
+test$Cover_Type <- as.factor(testCover_Type)
+```
 
+**Initial Model (acc: 0,399) <- OLD DATA, RESUBMIT AND RECALC** 
 Try kNN with data centering and scaling:
 ```{r}
 ctrl <- trainControl(method="cv", number = 7)
@@ -49,7 +55,8 @@ cm_norm
 cm$byClass
 ```
 
-Now let's check random forest:
+<!--
+Now let's check random forest: <- too long to evaluate :(
 ```{r}
 rfFit <- train(Cover_Type ~ ., data=train, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 3)
 rfFit
@@ -71,3 +78,28 @@ cm_norm <- cm$table / rowSums(cm$table) * 100
 cm_norm
 cm$byClass
 ```
+-->
+
+** Exploratory things **
+
+```{r}
+qplot(Elevation, data=train, geom="density", fill=as.factor(Cover_Type), alpha=I(.5), main="Elevation by cover Types")
+```
+
+** Second try: feature selection **
+
+```{r}
+train_numerical <- subset(train, select=c(Elevation:Horizontal_Distance_To_Fire_Points, Cover_Type))
+test_numerical <- subset(train, select=c(Elevation:Horizontal_Distance_To_Fire_Points, Cover_Type))
+
+rf_numerical <- train(Cover_Type ~ ., data=train_numerical, method = "rf", 
+                      trControl = ctrl, preProcess = c("center","scale"), tuneLength = 3)
+cm <- confusionMatrix(data = predict(rf_numerical, newdata=test_numerical)), reference = test$Cover_Type)
+cm
+cm_norm <- cm$table / rowSums(cm$table) * 100
+cm_norm
+cm$byClass
+
+varImpPlot(rf_numerical)
+```
+
